@@ -1,0 +1,25 @@
+[project]
+name = "realtime-interpreter-backend"
+version = "0.1.0"
+description = "Backend for the realtime interpreter"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "alembic>=1.19.1",
+    "fastapi>=0.141.1",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.15.0",
+    "redis>=8.1.0",
+    "sqlalchemy>=2.0.52",
+    "structlog>=26.1.0",
+    "uvicorn[standard]>=0.52.3",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.3",
+]
