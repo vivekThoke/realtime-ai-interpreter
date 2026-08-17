@@ -10,19 +10,19 @@ router = APIRouter(prefix="/health", tags=["Health"])
 
 
 @router.get("")
-async def health_check():
+async def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @router.get("/db")
-async def database_health(db: Session = Depends(get_db)):
+async def database_health(db: Session = Depends(get_db)) -> dict[str, str]:
     db.execute(text("SELECT 1"))
 
     return {"status": "ok", "database": "connected"}
 
 
 @router.get("/redis")
-async def redis_health():
+async def redis_health() -> dict[str, str]:
     settings = get_settings()
 
     client = Redis.from_url(settings.redis_url)
