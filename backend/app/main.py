@@ -8,3 +8,5 @@ app = FastAPI(
     title="Realtime AI Interpreter",
     version=settings.app_version
 )
+
+app.include_router(health_router)
