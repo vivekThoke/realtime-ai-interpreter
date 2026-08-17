@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
+from redis import Redis
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.db.session import get_db
+from app.core.config import get_settings
 
 router = APIRouter(
     prefix="/health",
@@ -25,3 +27,22 @@ async def database_health(
         "status": "ok",
         "database": "connected"
     }
+    
+@router.get("/redis")
+async def redis_health():
+    settings = get_settings()
+    
+    client = Redis.from_url(settings.redis_url)
+    
+    try:
+        client.ping()
+        
+        return {
+            "status": "ok",
+            "redis": "connected"
+        }
+    finally:
+        client.close()
+        
+
+    
