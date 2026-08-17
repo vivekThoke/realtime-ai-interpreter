@@ -36,14 +36,12 @@ select = [
     "UP",
     "B",
 ]   
+ignore = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
-
-[tool.ruff.lint]
-ignore = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"
