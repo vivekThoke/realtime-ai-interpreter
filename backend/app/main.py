@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from app.api.health import router as health_router
 from app.core.config import get_settings
 
@@ -8,5 +8,3 @@ app = FastAPI(
     title="Realtime AI Interpreter",
     version=settings.app_version
 )
-
-app.include_router(health_router)
