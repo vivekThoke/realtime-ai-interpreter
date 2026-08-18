@@ -1,18 +1,19 @@
+"use client"
+
 import { useEffect, useState } from "react";
 import { getHealth } from "@/library/api";
 
 export default function Home() {
   const [status, setStatus] = useState("Checking backend...");
-  const [error, setError] = useState<string | null>(null);  
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkBackend() {
       try {
         const response = await getHealth();
         setStatus(response.status);
-      }
-      catch {
-        setError("Unable to connect to backend");
+      } catch {
+        setError("Unable to connect to backend.");
       }
     }
 
