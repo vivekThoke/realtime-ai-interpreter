@@ -9,7 +9,7 @@ settings = get_settings()
 app = FastAPI(title="Realtime AI Interpreter", version=settings.app_version)
 
 app.add_middleware(
-        CORSMiddleware,
+    CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
     ],
