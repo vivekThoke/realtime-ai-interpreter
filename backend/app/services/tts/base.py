@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 
+
 class TTSProvider(ABC):
     """Interface for tex-to-speech providers."""
-    
+
     @abstractmethod
     async def synthesize(
         self,
