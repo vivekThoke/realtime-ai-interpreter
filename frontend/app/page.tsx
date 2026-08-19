@@ -21,7 +21,7 @@ export default function Home() {
       try {
         const response = await getHealth();
         
-        if (response.status == "Ok") {
+        if (response.status == "ok") {
           setHealthState("success");
           setMessage("Backend is healthy.");
           return;
@@ -48,10 +48,6 @@ export default function Home() {
        <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
       <section className="w-full max-w-xl rounded-2xl border bg-white p-10 shadow-sm">
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-500">
-            Sprint 0
-          </p>
-
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             Realtime AI Interpreter
           </h1>
