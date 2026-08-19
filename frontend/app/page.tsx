@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { getHealth } from "@/library/api";
+import { HealthStatus } from "@/components/health-status";
+
+type HealthState = "loading" | "success" | "error"; 
 
 export default function Home() {
+  const [healthState, setHealthState] = useState<HealthState>("loading");
+
+  const [message, setMessage] = useState(
+    "Checking backend connection...",
+  )
+
   const [status, setStatus] = useState("Checking backend...");
   const [error, setError] = useState<string | null>(null);
 
@@ -11,36 +20,60 @@ export default function Home() {
     async function checkBackend() {
       try {
         const response = await getHealth();
-        setStatus(response.status);
-      } catch {
-        setError("Unable to connect to backend.");
+        
+        if (response.status == "Ok") {
+          setHealthState("success");
+          setMessage("Backend is healthy.");
+          return;
+        }
+
+        setHealthState("error");
+        setMessage("Backend returned an unexpected response.");
+      } catch (error) {
+        setHealthState("error");
+
+        if (error instanceof Error) {
+          setMessage(error.message);
+        }
+        else {
+          setMessage("Unable to connect to the backend");
+        }
       }
     }
 
-    checkBackend();
+    void checkBackend();
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="rounded-xl border bg-white p-8 text-center shadow-sm">
-        <h1 className="text-3xl font-bold">
-          Realtime AI Interpreter
-        </h1>
+       <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <section className="w-full max-w-xl rounded-2xl border bg-white p-10 shadow-sm">
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-500">
+            Sprint 0
+          </p>
 
-        <p className="mt-4 text-gray-600">
-          Sprint 0 — Frontend Foundation
-        </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+            Realtime AI Interpreter
+          </h1>
 
-        <div className="mt-6">
-          {error ? (
-            <p className="text-red-600">{error}</p>
-          ) : (
-            <p className="text-green-600">
-              Backend status: {status}
-            </p>
-          )}
+          <p className="mt-3 text-gray-600">
+            Frontend foundation and backend integration
+          </p>
         </div>
-      </div>
+
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Backend Status
+          </h2>
+
+          <div className="mt-3">
+            <HealthStatus
+              status={healthState}
+              message={message}
+            />
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
