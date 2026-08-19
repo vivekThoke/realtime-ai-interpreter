@@ -4,12 +4,41 @@ export interface HealthResponse {
     status: string;
 }
 
-export async function getHealth(): Promise<HealthResponse> {
-    const response = await fetch(`${API_URL}/health`)
+export class ApiError extends Error {
+    status: number;
 
-    if (!response.ok) {
-        throw new Error(`Health check failed: ${response.status}`);
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+    }
+}
+
+async function apiFetch<T>(
+    endpoint: string,
+    options?: RequestInit
+) : Promise<T> {
+    let response: Response;
+
+    try {
+        response = await fetch(`${API_URL}${endpoint}`, options);
+    } catch {
+        throw new ApiError(
+            "Unable to connect to the backend",
+            0
+        );
     }
 
-    return response.json() as Promise<HealthResponse>;
+    if (!response.ok) {
+        throw new ApiError(
+            `Backend request failed with satus ${response.status}`,
+            response.status,
+        );
+    }
+
+    return response.json() as Promise<T>;
+}
+
+export async function getHealth(): Promise<HealthResponse> {
+    return apiFetch<HealthResponse>("/health");
 }
