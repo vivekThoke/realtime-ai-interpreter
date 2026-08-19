@@ -12,10 +12,7 @@ export default function Home() {
   const [message, setMessage] = useState(
     "Checking backend connection...",
   )
-
-  const [status, setStatus] = useState("Checking backend...");
-  const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
     async function checkBackend() {
       try {
