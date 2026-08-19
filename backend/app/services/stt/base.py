@@ -11,4 +11,4 @@ class STTProvider(ABC):
         language: str,
     ) -> str:
         """Convert audio to text."""
-        raise NotADirectoryError
+        raise NotImplementedError
