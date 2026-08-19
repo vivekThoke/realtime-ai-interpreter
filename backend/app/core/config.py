@@ -10,11 +10,11 @@ class Settings(BaseSettings):
 
     database_url: str
     redis_url: str
-    
+
     stt_provider: str = "openai"
     translation_provider: str = "openai"
     tts_provider: str = "openai"
-    
+
     open_api_key: str = ""
 
     model_config = SettingsConfigDict(
