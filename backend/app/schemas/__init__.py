@@ -11,5 +11,5 @@ __all__ = [
     "TranscriptionResponse",
     "TranslationRequest",
     "TranslationResponse",
-    "SpeechSynthesisRequest"
+    "SpeechSynthesisRequest",
 ]
