@@ -1,6 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+
+class Language(BaseModel):
+    code: str
+    name: str
 
 
 class LanguagePair(BaseModel):
-    source_language: str = Field(min_length=2, max_length=10)
-    target_language: str = Field(min_length=2, max_length=10)
+    source_language: str
+    target_language: str
