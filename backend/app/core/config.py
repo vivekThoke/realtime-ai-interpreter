@@ -11,11 +11,12 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
 
-    stt_provider: str = "openai"
-    translation_provider: str = "openai"
-    tts_provider: str = "openai"
+    stt_provider: str = "gemini"
+    translation_provider: str = "gemini"
+    tts_provider: str = "gemini"
 
-    open_api_key: str = ""
+    gemini_api_key: str
+    gemini_translation_model: str = "gemini-3.7-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
