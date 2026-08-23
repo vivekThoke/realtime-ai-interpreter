@@ -7,7 +7,6 @@ from app.schemas.translation import (
 )
 from app.services.translation.service import TranslationService
 
-
 router = APIRouter(
     prefix="/translate",
     tags=["Translation"],
