@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     tts_provider: str = "gemini"
 
     gemini_api_key: str
-    gemini_translation_model: str = "gemini-3.7-flash"
+    gemini_translation_model: str = "gemini-3.5-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
