@@ -2,6 +2,7 @@ import pytest
 
 from app.services.translation import TranslationProvider
 
+
 class FakeTranslationProvider(TranslationProvider):
     async def translate(
         self, 
