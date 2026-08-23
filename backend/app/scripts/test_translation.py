@@ -9,7 +9,7 @@ async def main() -> None:
     result = await provider.translate(
         text="Where is the nearest railway station?",
         source_language="English",
-        target_language="Hindi",
+        target_language="Kannada",
     )
 
     print(result)
