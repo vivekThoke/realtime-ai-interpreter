@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str
     gemini_translation_model: str = "gemini-3.5-flash"
+    gemini_stt_model: str = "gemini-3.5-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
