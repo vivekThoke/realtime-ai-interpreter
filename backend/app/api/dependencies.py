@@ -23,7 +23,7 @@ def get_translation_service() -> TranslationService:
         provider=get_translation_provider(),
     )
 
-lru_cache
+@lru_cache
 def get_stt_provider() -> STTProvider:
     return GeminiSTTProvider()
 
