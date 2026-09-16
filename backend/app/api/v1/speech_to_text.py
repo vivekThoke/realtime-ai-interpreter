@@ -57,8 +57,8 @@ async def speech_to_text(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Speech-to-text provider request failed.",
-        )
+            detail=f"Speech-to-text provider request failed: {exc}",
+        ) from exc
         
     return TranscriptionResponse(
         language=language,
