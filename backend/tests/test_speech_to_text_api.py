@@ -7,6 +7,7 @@ from app.api.dependencies import get_stt_service
 from app.main import app
 from app.services.stt.service import STTService
 
+
 class FakeSTTProvider:
     async def transcribe(
         self,
@@ -20,22 +21,22 @@ class FakeSTTProvider:
 
         return "Where is the nearest railway station?"
 
+
 def get_fake_stt_service() -> STTService:
     return STTService(
         provider=FakeSTTProvider(),
     )
 
+
 @pytest.fixture
 def client() -> TestClient:
-    app.dependency_overrides[get_stt_service] = (
-        get_fake_stt_service
-    )
+    app.dependency_overrides[get_stt_service] = get_fake_stt_service
 
     yield TestClient(app)
 
     app.dependency_overrides.clear()
 
-    
+
 def test_speech_to_text(client: TestClient) -> None:
     response = client.post(
         "/api/v1/speech-to-text",
@@ -57,7 +58,7 @@ def test_speech_to_text(client: TestClient) -> None:
         "text": "Where is the nearest railway station?",
     }
 
-    
+
 def test_speech_to_text_rejects_empty_file(
     client: TestClient,
 ) -> None:
@@ -76,5 +77,3 @@ def test_speech_to_text_rejects_empty_file(
     )
 
     assert response.status_code == 400
-    
-    

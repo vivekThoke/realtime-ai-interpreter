@@ -65,6 +65,4 @@ class GeminiSTTProvider(STTProvider):
         try:
             return mime_types[extension]
         except KeyError as exc:
-            raise ValueError(
-                f"Unsupported audio format: .{extension}"
-            ) from exc
+            raise ValueError(f"Unsupported audio format: .{extension}") from exc
