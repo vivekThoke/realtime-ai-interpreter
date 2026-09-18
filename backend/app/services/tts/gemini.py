@@ -6,29 +6,29 @@ from app.services.tts import TTSProvider
 
 class GeminiTTSProvider(TTSProvider):
     """Gemini-backed text-to-speech provider."""
-    
+
     def __init__(self) -> None:
         settings = get_settings()
-        
+
         self.model = settings.gemini_tts_model
         self.voice = settings.gemini_tts_voice
-        
+
         self.client = genai.Client(
-            api_key=settings.gemini_api_key
+            api_key=settings.gemini_api_key,
         )
-        
-        
+
     async def synthesize(
-        self, 
-        text, 
-        language
+        self,
+        text: str,
+        language: str,
     ) -> bytes:
         prompt = f"""
-        Read the following text aloud naturally in {language}
-        
-        Text: {text}
-        """.strip()
-        
+                    Read the following text aloud naturally in {language}.
+
+                    Text:
+                    {text}
+                    """.strip()
+
         response = await self.client.aio.models.generate_content(
             model=self.model,
             contents=prompt,
@@ -43,4 +43,23 @@ class GeminiTTSProvider(TTSProvider):
                 ),
             ),
         )
-        
+
+        try:
+            audio_data = (
+                response.candidates[0]
+                .content
+                .parts[0]
+                .inline_data
+                .data
+            )
+        except (IndexError, AttributeError, TypeError) as exc:
+            raise RuntimeError(
+                "Gemini returned no audio data."
+            ) from exc
+
+        if not audio_data:
+            raise RuntimeError(
+                "Gemini returned empty audio data."
+            )
+
+        return audio_data
