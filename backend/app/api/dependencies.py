@@ -7,6 +7,8 @@ from app.services.translation import (
     TranslationProvider,
 )
 from app.services.translation.service import TranslationService
+from app.services.tts import GeminiTTSProvider, TTSProvider
+from app.services.tts.service import TTSService
 
 
 @lru_cache
@@ -30,4 +32,14 @@ def get_stt_provider() -> STTProvider:
 def get_stt_service() -> STTService:
     return STTService(
         provider=get_stt_provider(),
+    )
+    
+@lru_cache
+def get_tts_provider() -> TTSProvider:
+    return GeminiTTSProvider()
+
+@lru_cache
+def get_tts_service() -> TTSService:
+    return TTSService(
+        provider=get_tts_provider(),
     )
