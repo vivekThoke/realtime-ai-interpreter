@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     gemini_translation_model: str = "gemini-3.5-flash"
     gemini_stt_model: str = "gemini-3.5-flash"
     
-    gemini_tss_model: str = "gemini-3.1-flash-tss-preview"
-    gemini_tss_voice: str = "kore"
+    gemini_tts_model: str = "gemini-3.1-flash-tss-preview"
+    gemini_tts_voice: str = "kore"
 
     model_config = SettingsConfigDict(
         env_file=".env",
