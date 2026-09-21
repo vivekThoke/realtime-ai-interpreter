@@ -33,10 +33,12 @@ def get_stt_service() -> STTService:
     return STTService(
         provider=get_stt_provider(),
     )
-    
+
+
 @lru_cache
 def get_tts_provider() -> TTSProvider:
     return GeminiTTSProvider()
+
 
 @lru_cache
 def get_tts_service() -> TTSService:

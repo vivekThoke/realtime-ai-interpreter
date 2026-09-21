@@ -2,6 +2,7 @@ import pytest
 
 from app.services.tts import TTSProvider
 
+
 class FakeTTSProvider(TTSProvider):
     async def synthesize(
         self,

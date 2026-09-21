@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.services.tts import GeminiTTSProvider
 
+
 def save_wav(
     path: Path,
     pcm_data: bytes,
@@ -16,7 +17,7 @@ def save_wav(
         wav_file.setsampwidth(sample_width)
         wav_file.setframerate(sample_rate)
         wav_file.writeframes(pcm_data)
-        
+
 
 async def main() -> None:
     provider = GeminiTTSProvider()
@@ -30,7 +31,7 @@ async def main() -> None:
     save_wav(output_path, audio)
 
     print(f"Audio written to: {output_path.resolve()}")
-    
+
 
 if __name__ == "__main__":
     asyncio.run(main())

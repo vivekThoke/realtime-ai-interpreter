@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     gemini_api_key: str
     gemini_translation_model: str = "gemini-3.5-flash"
     gemini_stt_model: str = "gemini-3.5-flash"
-    
+
     gemini_tts_model: str = "gemini-3.1-flash-tts-preview"
     gemini_tts_voice: str = "kore"
 

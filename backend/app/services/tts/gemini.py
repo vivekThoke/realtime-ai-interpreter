@@ -4,6 +4,7 @@ from google.genai import types
 from app.core.config import get_settings
 from app.services.tts import TTSProvider
 
+
 class GeminiTTSProvider(TTSProvider):
     """Gemini-backed text-to-speech provider."""
 
@@ -45,21 +46,11 @@ class GeminiTTSProvider(TTSProvider):
         )
 
         try:
-            audio_data = (
-                response.candidates[0]
-                .content
-                .parts[0]
-                .inline_data
-                .data
-            )
+            audio_data = response.candidates[0].content.parts[0].inline_data.data
         except (IndexError, AttributeError, TypeError) as exc:
-            raise RuntimeError(
-                "Gemini returned no audio data."
-            ) from exc
+            raise RuntimeError("Gemini returned no audio data.") from exc
 
         if not audio_data:
-            raise RuntimeError(
-                "Gemini returned empty audio data."
-            )
+            raise RuntimeError("Gemini returned empty audio data.")
 
         return audio_data
