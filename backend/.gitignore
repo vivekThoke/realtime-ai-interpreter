@@ -58,4 +58,7 @@ build/
 
 # Testing
 coverage/
-jest.json
+jest.
+
+# Generated audio
+*.wav
