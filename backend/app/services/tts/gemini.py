@@ -46,11 +46,33 @@ class GeminiTTSProvider(TTSProvider):
         )
 
         try:
-            audio_data = response.candidates[0].content.parts[0].inline_data.data
+            # audio_data = response.candidates[0].content.parts[0].inline_data.data
+            candidates = response.candidates
+
+            if not candidates:
+                raise RuntimeError("Gemini returned no candidates.")
+
+            content = candidates[0].content
+
+            if content is None:
+                raise RuntimeError("Gemini returned no content.")
+
+            parts = content.parts
+
+            if not parts:
+                raise RuntimeError("Gemini returned no content parts.")
+
+            inline_data = parts[0].inline_data
+
+            if inline_data is None:
+                raise RuntimeError("Gemini returned no inline audio data.")
+
+            audio_data = inline_data.data
+
+            if not audio_data:
+                raise RuntimeError("Gemini returned empty audio data.")
+
         except (IndexError, AttributeError, TypeError) as exc:
             raise RuntimeError("Gemini returned no audio data.") from exc
-
-        if not audio_data:
-            raise RuntimeError("Gemini returned empty audio data.")
 
         return audio_data
