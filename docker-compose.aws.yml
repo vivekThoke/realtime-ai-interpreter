@@ -1,0 +1,8 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment: 
+      POSTGRES_DB: realtime-interpreter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
