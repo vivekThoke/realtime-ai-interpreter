@@ -60,6 +60,9 @@ class GeminiSTTProvider(STTProvider):
             "aac": "audio/aac",
             "ogg": "audio/ogg",
             "flac": "audio/flac",
+            "webm": "audio/webm",
+            "m4a": "audio/m4a",
+            "opus": "audio/opus",
         }
 
         try:
