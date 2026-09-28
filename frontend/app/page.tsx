@@ -64,7 +64,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-12">
+    <main className="min-h-screen bg-gray-50 px-6 py-12 text-gray-700">
       <div className="mx-auto max-w-3xl">
         <header className="text-center">
           <p className="text-sm font-medium text-gray-500">
@@ -113,7 +113,7 @@ export default function Home() {
               }
               placeholder="Enter text to translate..."
               rows={4}
-              className="mt-2 w-full resize-none rounded-lg border border-gray-300 p-4 text-sm outline-none focus:border-gray-500"
+              className="mt-2 w-full resize-none rounded-lg border  border-gray-300 p-4 text-sm outline-none focus:border-gray-500"
             />
           </div>
 
@@ -128,7 +128,7 @@ export default function Home() {
               type="button"
               onClick={handleTranslate}
               disabled={isTranslating}
-              className="rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-gray-300 transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isTranslating
                 ? "Translating..."
