@@ -181,13 +181,10 @@ export default function Home() {
           </div>
 
           <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              disabled
-              className="rounded-full border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-500"
-            >
-              Start Recording
-            </button>
+            <MicrophoneRecorder
+              onRecordingComplete={handleRecordingComplete}
+              disabled={isTranscribing}
+            />
           </div>
         </section>
       </div>
