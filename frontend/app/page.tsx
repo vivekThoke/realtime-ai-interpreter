@@ -4,7 +4,9 @@ import { useState, useMemo } from "react";
 
 import { LanguageSelect } from "@/components/language-select";
 import { TranscriptPanel } from "@/components/transcript-panel";
-import { getLanguages, translate } from "@/library/api";
+import { getLanguages, translate, speechToText } from "@/library/api";
+import { MicrophoneRecorder } from "@/components/microphone-recorder";
+
 
 export default function Home() {
   const languages = useMemo(
@@ -27,6 +29,9 @@ export default function Home() {
     useState("");
 
   const [isTranslating, setIsTranslating] =
+    useState(false);
+  
+  const [isTranscribing, setIsTranscribing] =
     useState(false);
 
   const [error, setError] =
@@ -60,6 +65,31 @@ export default function Home() {
       }
     } finally {
       setIsTranslating(false);
+    }
+  };
+
+  const handleRecordingComplete = async (
+    audio: Blob,
+  ) => {
+    setError(null);
+    setIsTranscribing(true);
+
+    try {
+      const response = await speechToText(
+        audio,
+        sourceLanguage,
+      );
+
+      setTranscript(response.text);
+      setText(response.text);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Speech recognition failed.");
+      }
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
