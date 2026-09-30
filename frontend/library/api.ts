@@ -1,4 +1,5 @@
 import type { Language } from "@/types/language";
+import { promises } from "dns";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -17,6 +18,11 @@ export interface TranslationResponse {
   target_language: string;
   source_text: string;
   translated_text: string;
+}
+
+export interface TranscriptionResponse {
+  language: string;
+  text: string;
 }
 
 export class ApiError extends Error {
@@ -82,6 +88,35 @@ export function translate(
         "Content-Type": "application/json",
         },
         body: JSON.stringify(request),
+    },
+  );
+}
+
+export async function speechToText(
+  audio: Blob,
+  language: string,
+): Promise<TranscriptionResponse> {
+  const formData = new FormData();
+
+  const extension = audio.type.includes("webm")
+    ? "webm"
+    : audio.type.includes("ogg")
+      ? "ogg"
+      : "audio";
+
+  formData.append(
+    "audio",
+    audio,
+    `recording.${extension}`,
+  );
+
+  formData.append("language", language);
+
+  return apiFetch<TranscriptionResponse>(
+    "/api/v1/speech-to-text",
+    {
+      method: "POST",
+      body: formData,
     },
   );
 }
