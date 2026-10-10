@@ -1,34 +1,628 @@
 # Realtime AI Interpreter
 
-A realtime, bidirectional AI interpretation platform designed for low-latency conversational translation.
+A voice-translation application designed to help people who speak different languages understand each other. The first MVP focuses on **English → Hindi**: a user records a short message, the backend transcribes it, translates the text, and generates Hindi speech for playback.
 
-## Stack
+> **Project status:** Active development. Sprint 0 established the application foundation. Sprint 1 is building the first usable voice-translation MVP. The architecture and commands below reflect the project plan and implementation notes; verify each feature locally before treating it as release-ready. A public production deployment has not been confirmed in these notes.
 
-### Backend
+---
 
-- Python
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Redis
-- Celery
+## Contents
 
-### Frontend
+- [1. The idea in simple words](#1-the-idea-in-simple-words)
+- [2. The problem we are solving](#2-the-problem-we-are-solving)
+- [3. MVP user experience](#3-mvp-user-experience)
+- [4. How the system works](#4-how-the-system-works)
+- [5. Why we chose this architecture](#5-why-we-chose-this-architecture)
+- [6. Technology stack](#6-technology-stack)
+- [7. Repository structure](#7-repository-structure)
+- [8. Prerequisites](#8-prerequisites)
+- [9. Local development setup](#9-local-development-setup)
+- [10. Environment configuration](#10-environment-configuration)
+- [11. API overview](#11-api-overview)
+- [12. Testing and code quality](#12-testing-and-code-quality)
+- [13. CI/CD and deployment strategy](#13-cicd-and-deployment-strategy)
+- [14. Security and cost considerations](#14-security-and-cost-considerations)
+- [15. Development roadmap](#15-development-roadmap)
+- [16. Current limitations and non-goals](#16-current-limitations-and-non-goals)
+- [17. How to explain the project](#17-how-to-explain-the-project)
+- [18. Contributing to the project](#18-contributing-to-the-project)
 
-- Next.js
-- TypeScript
-- Tailwind CSS
+---
 
-### Infrastructure
+## 1. The idea in simple words
 
-- Docker
-- AWS
+Imagine two people who do not speak the same language. One person speaks English, and the other understands Hindi. The interpreter listens to the first person, converts the speech into text, translates that text into Hindi, and speaks the Hindi translation aloud.
 
-## Development
+The initial product follows this pipeline:
 
-### Backend
+```text
+English speech
+      |
+      v
+Speech-to-Text (STT)
+      |
+      v
+English transcript
+      |
+      v
+Translation
+      |
+      v
+Hindi text
+      |
+      v
+Text-to-Speech (TTS)
+      |
+      v
+Hindi audio
+```
 
-```bash
+The project is being built in small increments. First, we want a usable single-user MVP. Real-time streaming, two-way conversations, rooms, speaker intelligence, and scaling come later.
+
+## 2. The problem we are solving
+
+Language differences make everyday conversations harder when people cannot comfortably speak a common language. Typing a sentence into a translator can help, but it is inconvenient when a person wants to speak naturally and hear the result.
+
+This project aims to make that interaction simpler:
+
+1. Choose the language being spoken and the language wanted.
+2. Record a short message in the browser.
+3. Receive the transcript and its translation.
+4. Listen to the translated speech.
+
+### Initial use case
+
+A user asks in English:
+
+> Where is the nearest railway station?
+
+The application transcribes the audio, produces a Hindi translation such as:
+
+> निकटतम रेलवे स्टेशन कहाँ है?
+
+and generates audio that the user can play.
+
+The exact translated wording may vary by provider output.
+
+## 3. MVP user experience
+
+The first version is deliberately limited to a **single user and a short recording**.
+
+The planned interface contains:
+
+- **From / To:** source and target language selectors, initially English and Hindi.
+- **Record / Stop:** ask for microphone permission and capture a short recording.
+- **Transcript:** display what the speech recognizer heard.
+- **Translation:** display the translated text.
+- **Play audio:** play the generated speech in the target language.
+- **Status and errors:** show loading, success, permission, network, and provider failures clearly.
+
+The interaction for the first MVP is request/response-based: record a short clip, upload it, wait for the pipeline, then receive the result. Although the product is called *Realtime AI Interpreter*, continuous low-latency streaming is a later milestone rather than a claim about the first MVP.
+
+### Not in the first MVP
+
+The first release does not require accounts, profiles, meetings, rooms, speaker identification, saved recordings, analytics, or WebSocket streaming. These features would delay validation of the core experience.
+
+## 4. How the system works
+
+### 4.1 Component view
+
+```text
+                       Browser
+                Next.js + TypeScript
+                         |
+           microphone recording / HTTP request
+                         |
+                         v
+                    FastAPI API
+                         |
+                         v
+                 InterpreterService
+                         |
+              +----------+----------+
+              |          |          |
+              v          v          v
+             STT     Translation    TTS
+              |          |          |
+              +----------+----------+
+                         |
+                         v
+                Gemini / Google API
+                         |
+                         v
+             transcript + translation + audio
+                         |
+                         v
+                       Browser
+```
+
+The final orchestration will call each capability in sequence. During development, individual endpoints are useful because each part can be tested independently.
+
+### 4.2 The three AI capabilities
+
+**Speech-to-Text (STT)** converts recorded audio into text. The browser uploads a short audio file to the backend, and the backend sends the audio to the configured speech provider.
+
+**Translation** converts the transcript from the source language into the target language. For the MVP, the first intended direction is English to Hindi.
+
+**Text-to-Speech (TTS)** turns the translated text into audio that the browser can play. Raw provider audio may need to be wrapped in an appropriate audio container such as WAV before it is served to the browser.
+
+### 4.3 Why cloud AI for the first version?
+
+The development laptop has limited memory and compute resources for loading multiple speech and translation models locally. For Sprint 1, the plan therefore uses cloud-based Gemini providers for STT, translation, and TTS.
+
+This decision reduces the need to run large ML models on the laptop. It does mean that the application needs an internet connection, a valid API key, provider availability, and suitable API quota. Free-tier availability and data-use terms depend on the provider and the selected model; do not assume the service is unlimited or always free.
+
+### 4.4 Provider abstractions
+
+The application owns interfaces for each capability:
+
+```text
+STTProvider
+  └── GeminiSTTProvider
+      └── possible future local/provider alternatives
+
+TranslationProvider
+  └── GeminiTranslationProvider
+      └── possible future IndicTrans2/provider alternatives
+
+TTSProvider
+  └── GeminiTTSProvider
+      └── possible future IndicF5/provider alternatives
+```
+
+The API and orchestration service should depend on these interfaces, not directly on a vendor SDK. This keeps the application easier to test and allows a provider to be replaced without rewriting the entire pipeline.
+
+## 5. Why we chose this architecture
+
+### Small, understandable layers
+
+- **API layer:** handles HTTP requests, response codes, input validation, and API versioning.
+- **Schemas:** define the data accepted and returned by the API.
+- **Application services:** coordinate the work required to complete a use case.
+- **Provider interfaces:** define what an AI capability must do without specifying the vendor.
+- **Provider implementations:** integrate with a particular external service or local model.
+- **Configuration:** reads environment-specific settings and secrets.
+- **Database layer:** manages SQLAlchemy connections and Alembic migrations.
+
+### Keep the first version small
+
+We are not adding generic repositories, many empty folders, a message broker for audio, or distributed services before the use case needs them. PostgreSQL and Redis are part of the development foundation, but the initial voice pipeline does not need to route every audio chunk through Redis or Celery.
+
+### Test without paid AI requests
+
+Unit and API tests should use fake providers. That lets CI verify our application logic without consuming Gemini quota, depending on external network access, or producing nondeterministic results. Real provider integration should be tested separately and intentionally.
+
+## 6. Technology stack
+
+| Area | Technology | Purpose |
+|---|---|---|
+| Backend API | Python, FastAPI | HTTP API and request handling |
+| Settings | Pydantic Settings | Read environment configuration |
+| Data validation | Pydantic | Validate request and response shapes |
+| Database | PostgreSQL | Durable application metadata when needed |
+| ORM / migrations | SQLAlchemy, Alembic | Database access and schema migrations |
+| Cache / realtime foundation | Redis | Infrastructure for future realtime coordination and related capabilities |
+| AI providers | Google GenAI SDK / Gemini API | STT, translation, and TTS in the initial cloud-based plan |
+| Frontend | Next.js, React, TypeScript | Browser user interface |
+| Styling | Tailwind CSS | UI styling |
+| Browser audio | MediaRecorder, Web Audio/browser audio APIs | Capture and play audio |
+| Dependency management | `uv` for Python; npm for frontend | Reproducible dependency installation |
+| Containers | Docker, Docker Compose | Local services and deployment packaging |
+| Tests / quality | pytest, HTTPX/TestClient, Ruff, MyPy | Automated tests, linting, formatting, and type checking |
+| CI/CD | GitHub Actions (planned/being verified) | Automated validation and release workflow |
+| Initial cloud target | AWS EC2 for an early checkpoint | Run the containerized backend without hosting ML models locally |
+
+Model identifiers and SDK behavior can change. Keep model names configurable and verify them against the provider's current documentation before deploying or upgrading.
+
+## 7. Repository structure
+
+The project is a monorepo: backend, frontend, tests, and deployment configuration live in one repository.
+
+```text
+realtime-interpreter/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── health.py
+│   │   │   ├── dependencies.py
+│   │   │   └── v1/
+│   │   │       ├── translation.py
+│   │   │       └── speech_to_text.py
+│   │   ├── core/
+│   │   │   └── config.py
+│   │   ├── db/
+│   │   │   ├── base.py
+│   │   │   └── session.py
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   │   ├── interpreter.py
+│   │   │   ├── stt/
+│   │   │   ├── translation/
+│   │   │   └── tts/
+│   │   └── main.py
+│   ├── alembic/
+│   ├── scripts/
+│   ├── tests/
+│   ├── .env.example
+│   ├── alembic.ini
+│   ├── pyproject.toml
+│   └── uv.lock
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/
+│   │   ├── lib/
+│   │   └── types/
+│   ├── public/
+│   ├── .env.example
+│   ├── package.json
+│   └── package-lock.json
+├── .github/
+│   └── workflows/
+├── infrastructure/
+├── docker-compose.yml
+├── docker-compose.aws.yml        # if the AWS Compose setup has been added
+├── .gitignore
+└── README.md
+```
+
+The exact files may differ slightly while tasks are being implemented. Only create a directory when it supports a real feature; this structure is a guide, not a requirement to create empty files.
+
+## 8. Prerequisites
+
+Install or configure the following on the development machine:
+
+- Git
+- Python 3.12 (managed through `uv`)
+- `uv`
+- Node.js and npm
+- Docker Desktop with Docker Compose
+- A Gemini API key for real provider calls
+
+The ordinary unit-test suite should not require a working Gemini key. Real STT, translation, and TTS checks do.
+
+## 9. Local development setup
+
+The commands below use Windows PowerShell, matching the development environment used in the project notes.
+
+### 9.1 Clone the repository
+
+```powershell
+git clone <your-repository-url>
+cd realtime-interpreter
+```
+
+### 9.2 Start PostgreSQL and Redis
+
+From the repository root:
+
+```powershell
+docker compose up -d
+docker compose ps
+```
+
+Wait until the PostgreSQL and Redis containers report healthy. The root `docker-compose.yml` is the local development setup; do not confuse it with the separate AWS deployment Compose file if one is present.
+
+### 9.3 Configure the backend
+
+```powershell
 cd backend
-uv sync
+Copy-Item .env.example .env
+```
+
+Edit `backend/.env` and set the local database/Redis connection values and any provider settings needed for real AI calls. See [Environment configuration](#10-environment-configuration).
+
+Install dependencies:
+
+```powershell
+uv sync --dev
+```
+
+Apply database migrations:
+
+```powershell
+uv run alembic upgrade head
+```
+
+Start the API:
+
+```powershell
 uv run uvicorn app.main:app --reload
+```
+
+Useful local URLs:
+
+- API root/health: <http://localhost:8000/health>
+- Database health: <http://localhost:8000/health/db>
+- Redis health: <http://localhost:8000/health/redis>
+- Interactive API documentation: <http://localhost:8000/docs>
+
+Keep the backend terminal running.
+
+### 9.4 Configure the frontend
+
+Open a second PowerShell terminal from the repository root:
+
+```powershell
+cd frontend
+Copy-Item .env.example .env.local
+npm ci
+npm run dev
+```
+
+Open <http://localhost:3000>.
+
+The frontend API URL should point to the backend, normally `http://localhost:8000` for local development. If the frontend and backend use different origins, FastAPI's CORS configuration must allow the frontend origin.
+
+### 9.5 Stop local services
+
+Stop the frontend and backend with `Ctrl+C` in their terminals. Stop the Docker services from the repository root:
+
+```powershell
+docker compose down
+```
+
+This keeps named volumes. **Do not use `docker compose down -v` unless you intentionally want to delete the local database and Redis volumes.**
+
+## 10. Environment configuration
+
+Secrets and environment-specific values must not be committed to Git. Use `.env.example` as a template and place real values in local ignored files.
+
+### Backend example
+
+`backend/.env.example` should document the variables the application actually reads. A typical setup is:
+
+```dotenv
+APP_NAME=Realtime AI Interpreter
+APP_VERSION=0.1.0
+ENVIRONMENT=development
+
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/realtime_interpreter
+REDIS_URL=redis://localhost:6379/0
+
+STT_PROVIDER=gemini
+TRANSLATION_PROVIDER=gemini
+TTS_PROVIDER=gemini
+
+GEMINI_API_KEY=
+GEMINI_STT_MODEL=<current-supported-stt-model>
+GEMINI_TRANSLATION_MODEL=<current-supported-translation-model>
+GEMINI_TTS_MODEL=<current-supported-tts-model>
+GEMINI_TTS_VOICE=Kore
+```
+
+Replace model placeholders with currently supported model identifiers from the provider's documentation. Keep your actual API key only in `backend/.env` or in your deployment secret configuration.
+
+### Frontend example
+
+`frontend/.env.example`:
+
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+`NEXT_PUBLIC_` values are embedded in browser-facing frontend code. Never put API keys or other secrets in a `NEXT_PUBLIC_` variable.
+
+### Deployment configuration
+
+An AWS Compose deployment may use a separate ignored file such as `.env.aws`. Keep the Gemini key out of the Compose YAML and Docker image. Do not commit `.env`, `.env.local`, `.env.aws`, access keys, tokens, or generated audio. Check `git status` before every commit.
+
+## 11. API overview
+
+The API uses a versioned prefix for product endpoints: `/api/v1`.
+
+| Endpoint | Purpose | Development status in project notes |
+|---|---|---|
+| `GET /health` | Confirm the API process responds | Part of Sprint 0 foundation |
+| `GET /health/db` | Check PostgreSQL connectivity | Part of Sprint 0 foundation |
+| `GET /health/redis` | Check Redis connectivity | Part of Sprint 0 foundation |
+| `POST /api/v1/translate` | Accept text and return translated text | Implemented in the task plan; verify locally |
+| `POST /api/v1/speech-to-text` | Accept an audio upload and return a transcript | Being built/verified in Sprint 1 |
+| `POST /api/v1/text-to-speech` | Return speech audio for supplied text | Planned endpoint; verify implementation status |
+| `POST /api/v1/interpret` | Orchestrate STT → translation → TTS | Planned endpoint |
+| `GET /api/v1/languages` | Return available source/target languages | Planned backend endpoint; early UI can use a local list |
+
+This table is a roadmap of the intended API surface, not a claim that every endpoint is already deployed. Confirm the current set of routes at `http://localhost:8000/docs`.
+
+### Translation request example
+
+The earlier API implementation used display names for language inputs:
+
+```json
+{
+  "text": "Where is the nearest railway station?",
+  "source_language": "English",
+  "target_language": "Hindi"
+}
+```
+
+A successful response has this shape:
+
+```json
+{
+  "source_language": "English",
+  "target_language": "Hindi",
+  "source_text": "Where is the nearest railway station?",
+  "translated_text": "निकटतम रेलवे स्टेशन कहाँ है?"
+}
+```
+
+The frontend has also introduced language codes (`en`, `hi`). Before calling the integration production-ready, standardize the API contract on language codes and translate those codes to provider-specific language names/tags inside the provider layer. Until this normalization is implemented, use the values accepted by the actual backend version you are running.
+
+### Speech-to-text request
+
+The endpoint is designed to receive a `multipart/form-data` request containing:
+
+- `audio`: the recorded audio file
+- `language`: the expected spoken language
+
+The browser should let `FormData` generate the multipart content type and its boundary. The server must validate empty files and supported formats before sending audio to the provider.
+
+## 12. Testing and code quality
+
+Run backend commands from `backend/`.
+
+```powershell
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy app
+```
+
+Run frontend commands from `frontend/`.
+
+```powershell
+npm run lint
+npm run build
+```
+
+### Testing principles
+
+- **Unit tests:** verify a small function or service in isolation.
+- **API tests:** call FastAPI using `TestClient` and override provider dependencies with fakes.
+- **Integration tests:** verify the app can reach dependencies such as PostgreSQL or Redis.
+- **Provider smoke tests:** deliberately call the real Gemini API to verify keys, model access, provider behavior, and audio handling. Keep these separate from the default CI test suite.
+
+A normal `pytest` run should not unexpectedly download local ML models or make paid/external AI calls. Integration tests requiring running PostgreSQL/Redis should be run with those services started.
+
+## 13. CI/CD and deployment strategy
+
+We want to operate development and deployment as two parallel lanes, similar to a small production team.
+
+### Continuous Integration (CI)
+
+```text
+Feature branch
+      |
+      v
+Pull request
+      |
+      v
+GitHub Actions
+  ├── install dependencies
+  ├── Ruff lint and format check
+  ├── MyPy
+  ├── pytest
+  ├── frontend lint
+  └── frontend production build
+      |
+      v
+Merge only after required checks pass
+```
+
+The project notes describe a backend GitHub Actions workflow. The frontend checks and final required branch protections should be verified in the repository before treating CI as complete.
+
+### Continuous Delivery / Deployment (CD)
+
+The intended first automated delivery path is:
+
+```text
+Merge to main
+     |
+     v
+Build backend Docker image
+     |
+     v
+Publish image to a container registry (for example, GHCR)
+     |
+     v
+Deploy approved image to EC2
+     |
+     v
+Restart/update Compose services
+     |
+     v
+Smoke-test health and API endpoints
+```
+
+This describes the target workflow, not a verified live pipeline. Never deploy every unreviewed feature commit directly to production. Use a pull request, passing CI, and an explicit release/deploy step. Keep deployment credentials in GitHub/AWS secret stores, not in the repository.
+
+### Staged deployment plan
+
+1. **Local development:** Next.js and FastAPI run locally; PostgreSQL and Redis run in Docker.
+2. **Early backend deployment:** run the backend and required dependencies on one small EC2 instance to validate cloud configuration and Gemini connectivity.
+3. **MVP deployment:** deploy the usable frontend and complete audio pipeline, configure HTTPS, and document the public demo URL.
+4. **Later hardening:** move to a more managed/scalable design only when actual usage and reliability needs justify it.
+
+An early EC2 checkpoint using a directly exposed HTTP port is temporary only. It should not be considered a secure public production deployment. The final public application should use HTTPS and a properly configured reverse proxy or load balancer. Review AWS account eligibility, region, current pricing, and budget alerts before provisioning resources; budget alerts notify you but do not guarantee that spending stops automatically.
+
+## 14. Security and cost considerations
+
+- Keep the Gemini API key and all credentials out of source control and frontend code.
+- Restrict CORS to the real frontend origins; do not enable every origin in production without a reason.
+- Validate file size, file type, and empty uploads. Add request timeouts and sensible limits before exposing audio endpoints publicly.
+- Do not log API keys or full sensitive audio/transcripts by default.
+- Be explicit about the audio lifecycle. The MVP does not need to persist recordings unless a later feature requires it and users are informed.
+- Cloud model usage can incur cost and rate limits. Track provider quota and costs, and handle provider errors gracefully.
+- A public EC2 port with plain HTTP is an early development checkpoint, not the final production security posture.
+- PostgreSQL and Redis do not need public inbound access for this architecture. Keep their ports private to the Docker network on a deployed host.
+- Before running `docker compose down -v`, confirm you are happy to delete the data stored in the named volumes.
+
+## 15. Development roadmap
+
+Each sprint should leave the project in a working state. We want to deploy early and improve the same application incrementally, not build a large unfinished system and deploy everything at the end.
+
+| Sprint | Focus | Outcome |
+|---|---|---|
+| 0 | Foundation | Repository, FastAPI, Next.js, configuration, PostgreSQL, Redis, migrations, health checks, tests, CI foundation |
+| 1 | Single-user MVP | English → Hindi recording, transcription, translation, speech generation, usable browser UI, deployed demo |
+| 2 | Realtime streaming | WebSockets, audio chunks, voice activity detection (VAD), partial results, latency measurements, reconnect handling |
+| 3 | Bidirectional translation | English ↔ Hindi conversation flow |
+| 4 | Rooms and multiple users | Create/join/leave rooms, participant language preferences, room state and Redis Pub/Sub where needed |
+| 5 | Speaker intelligence and interruption | Speaker state and barge-in behavior, including stopping generated speech when the user interrupts |
+| 6 | Context and glossary | Conversation context and domain terminology to improve consistent translations |
+| 7 | Asynchronous post-session work | Optional summaries, decisions, action items, and Celery-based post-processing after a session |
+| 8 | Production hardening | Authentication/authorization, rate limiting, provider timeouts/retries, secrets management, backups, monitoring, and recovery |
+| 9 | Performance and scale | Measure latency per stage, load-test multiple users/rooms, identify bottlenecks, optimize from evidence |
+
+### Important performance principle
+
+Latency targets are goals to measure, not guarantees. The time depends on audio duration, network conditions, the selected model, provider load, and whether the provider returns partial/streaming results. We will measure the actual stages before claiming a particular latency.
+
+## 16. Current limitations and non-goals
+
+The first MVP is intentionally not a complete real-time meeting platform.
+
+- Initial language direction: English → Hindi.
+- Initial workflow: short recording upload and request/response processing.
+- The browser may use a supported MediaRecorder format such as WebM; provider compatibility and server-side validation must be checked together.
+- Transcription, translation, and speech generation depend on cloud provider availability and quota.
+- Continuous streaming, bidirectional interpretation, multiple users, speaker identification, barge-in, meeting summaries, and scale testing belong to later sprints.
+- PostgreSQL and Redis are part of the foundation; not every MVP request needs to use them.
+- A working local feature does not automatically mean it is deployed, secure, monitored, or production-ready. Each release needs an explicit test and deployment verification.
+
+## 17. How to explain the project
+
+### 30-second explanation
+
+> Realtime AI Interpreter is a voice translation application. The first version lets a user speak in English, converts the speech into text, translates it into Hindi, and generates Hindi audio for playback. I am building it with a Next.js frontend and a FastAPI backend. The STT, translation, and TTS capabilities sit behind separate provider interfaces, and the initial implementation uses Gemini APIs because my development machine cannot comfortably run all the required local models. I am building it incrementally with tests, CI/CD, and an early AWS deployment rather than waiting until the entire platform is complete.
+
+### Why separate STT, translation, and TTS?
+
+> Keeping the three stages separate makes it easier to test and debug each one. If transcription works but the translation is incorrect, I can locate the problem in the translation stage. The provider interfaces also mean I can change one provider later without rewriting the entire application.
+
+### Why use Gemini instead of local models initially?
+
+> The laptop has limited memory and compute resources for several speech and language models. Using Gemini for the first MVP allows me to focus on API design, audio handling, validation, testing, and deployment. The provider interfaces keep local or alternative providers as a future option.
+
+### Why use FastAPI and Next.js?
+
+> FastAPI gives us a typed Python API and fits well with AI SDKs. Next.js and TypeScript provide the browser interface, where we can capture microphone audio, display the transcript and translation, and play generated speech.
+
+### Why deploy before all features are complete?
+
+> Early deployment catches problems with environment variables, containers, networking, secrets, and provider access before the system becomes complicated. We can develop features and improve the deployment pipeline in parallel. Every release should pass CI and a smoke test before it is considered usable.
+
+## 18. Contributing to the project
+
+For each task:
+
+1. Understand the intended behavior and define a small acceptance checklist.
+2. Implement only what the current task needs.
+3. Add or update tests, using fake providers where appropriate.
+4. Run backend and frontend quality checks relevant to the change.
+5. Review `git diff` and `git status`; confirm no secrets, generated audio, local environments, or build artifacts are staged.
+6. Commit with a clear message and open a pull request when using the CI workflow.
+7. Deploy only through the agreed release path and verify the deployed health/API endpoints.
+
+The main project rule is simple: **keep the application working, validate each small step, deploy early, and add complexity only when the product needs it.**
