@@ -2,8 +2,6 @@
 
 A voice-translation application that helps people who speak different languages understand one another. The first MVP focuses on **English → Hindi**: a user records a short message, the backend transcribes it, translates the text, and generates Hindi speech for playback.
 
-> **Project status:** In active development. The foundation and initial API/UI work have been laid out, and Sprint 1 is building the single-user voice-translation MVP. Features and deployment status below are labelled honestly; check the current branch and run the verification steps before treating any capability as release-ready. A public production URL has not yet been confirmed.
-
 ## Contents
 
 - [Project overview](#project-overview)
